@@ -146,7 +146,7 @@ def wipe_old_sheets(wb):
 
 # ─── PostgreSQL helpers ───────────────────────────────────────────────────────
 
-DB_URL = "postgresql://n8n_connection_user:QbPfXanjXKi8aCZteQGwkuFCiUlCV8wd@dpg-d444b62dbo4c73b8k5i0-a.oregon-postgres.render.com:5432/central_db"
+DB_URL = "postgresql://n8n_connection_user:QbPfXanjXKi8aCZteQGwkuFCiUlCV8wd@dpg-d444b62dbo4c73b8k5i0-a.oregon-postgres.render.com:5432/bot_test"
 
 def get_db_conn():
     return psycopg2.connect(DB_URL, cursor_factory=psycopg2.extras.RealDictCursor)
@@ -187,7 +187,7 @@ def login(payload: LoginRequest):
         conn = get_db_conn()
         cur = conn.cursor()
         cur.execute(
-            "SELECT pm_id, name, email FROM privileges.project_managers WHERE email = %s AND password = %s",
+            "SELECT pm_id, name, email FROM public.project_managers WHERE email = %s AND password = %s",
             (payload.email.strip(), payload.password.strip())
         )
         user = cur.fetchone()
