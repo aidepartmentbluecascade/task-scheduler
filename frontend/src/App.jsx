@@ -7,7 +7,7 @@ import { AiTwotoneDelete } from "react-icons/ai";
 
 
 
-const API = "http://127.0.0.1:8000";
+const API = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 
 const STATUS_OPTIONS = ["To-Do", "In Progress", "Completed"];
 

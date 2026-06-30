@@ -13,6 +13,7 @@ from google.oauth2.service_account import Credentials
 from dotenv import load_dotenv
 import psycopg2
 import psycopg2.extras
+import uvicorn
 
 load_dotenv()
 
@@ -306,3 +307,11 @@ def delete_task(task_id: str):
 @app.get("/health")
 def health():
     return {"status": "ok", "timestamp": now_str()}
+
+if __name__ == "__main__":
+    uvicorn.run(
+        "main:app",      # filename: FastAPI instance
+        host="0.0.0.0",
+        port=8000,
+        reload=True
+    )
