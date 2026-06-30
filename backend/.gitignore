@@ -1,0 +1,95 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Virtual Environment
+venv/
+.venv/
+env/
+ENV/
+
+# Environment Variables
+.env
+.env.*
+!.env.example
+
+# IDEs
+.vscode/
+.idea/
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# Python Packaging
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Logs
+*.log
+logs/
+
+# Pytest
+.pytest_cache/
+.coverage
+htmlcov/
+.cache/
+
+# Type Checkers
+.mypy_cache/
+.pyre/
+.pytype/
+
+# Linting
+.ruff_cache/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# FastAPI / Uvicorn
+uvicorn.log
+
+# Database
+*.db
+*.sqlite3
+
+# Google Service Account Credentials
+service_account.json
+credentials.json
+google_credentials.json
+
+# Secrets
+*.pem
+*.key
+*.crt
+
+# Temporary Files
+*.tmp
+*.temp
+*.swp
+
+# macOS
+.AppleDouble
+.LSOverride
+
+# Windows
+Desktop.ini
+
+# Node (if using a React frontend in the same repo)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-lock.yaml
+
+# Coverage
+.coverage.*
+coverage.xml
+
+# PyInstaller
+*.manifest
+*.spec
