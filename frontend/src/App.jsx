@@ -1,6 +1,10 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import "./App.css";
-import { RiLogoutCircleRLine, RiSunLine, RiMoonClearLine } from "react-icons/ri";
+import {
+  RiLogoutCircleRLine, RiSunLine, RiMoonClearLine, RiPaletteLine,
+  RiArrowDownSLine, RiCheckLine, RiCheckboxBlankCircleLine,
+  RiLoader4Line, RiCheckboxCircleFill,
+} from "react-icons/ri";
 import { BiTask } from "react-icons/bi";
 import { AiTwotoneDelete } from "react-icons/ai";
 
@@ -12,9 +16,27 @@ const API = "https://task-scheduler-backend-qu03.onrender.com";
 const STATUS_OPTIONS = ["To-Do", "In Progress", "Completed"];
 
 const STATUS_COLORS = {
-  "To-Do":       { color: "#7ea6ff", bg: "rgba(126,166,255,0.10)", border: "rgba(126,166,255,0.28)" },
-  "In Progress": { color: "#ffbb55", bg: "rgba(255,187,85,0.10)",  border: "rgba(255,187,85,0.28)"  },
-  "Completed":   { color: "#3ecf8e", bg: "rgba(62,207,142,0.10)",  border: "rgba(62,207,142,0.28)"  },
+  "To-Do":       { color: "#7ea6ff", bg: "rgba(126,166,255,0.12)", border: "rgba(126,166,255,0.38)", ring: "rgba(126,166,255,0.22)" },
+  "In Progress": { color: "#ffbb55", bg: "rgba(255,187,85,0.12)",  border: "rgba(255,187,85,0.38)",  ring: "rgba(255,187,85,0.22)"  },
+  "Completed":   { color: "#3ecf8e", bg: "rgba(62,207,142,0.12)",  border: "rgba(62,207,142,0.38)",  ring: "rgba(62,207,142,0.22)"  },
+};
+
+// Each status gets an icon that encodes real progress, not just a color —
+// empty ring = not started, spinner-ring = in progress, checked circle = done.
+const STATUS_ICONS = {
+  "To-Do":       RiCheckboxBlankCircleLine,
+  "In Progress": RiLoader4Line,
+  "Completed":   RiCheckboxCircleFill,
+};
+
+const FALLBACK_STATUS_COLOR = { color: "#94a3b8", bg: "rgba(148,163,184,0.12)", border: "#94a3b855", ring: "rgba(148,163,184,0.22)" };
+
+// ── Theme cycle: dark → light → cream → dark ────────────────────────────────
+const THEME_ORDER = ["dark", "light", "cream"];
+const THEME_META = {
+  light: { icon: <RiSunLine />,       label: "Light Mode" },
+  cream: { icon: <RiPaletteLine />,   label: "Cream Mode" },
+  dark:  { icon: <RiMoonClearLine />, label: "Dark Mode"  },
 };
 
 const api = {
@@ -121,6 +143,9 @@ function LoginScreen({ onLogin }) {
 
 // ── Sidebar ───────────────────────────────────────────────────────────────────
 function Sidebar({ user, onLogoutClick, theme, onToggleTheme }) {
+  const nextTheme = THEME_ORDER[(THEME_ORDER.indexOf(theme) + 1) % THEME_ORDER.length];
+  const nextMeta = THEME_META[nextTheme];
+
   return (
     <aside className="sidebar sidebar--fade-in">
       <div className="sidebar-top">
@@ -144,8 +169,8 @@ function Sidebar({ user, onLogoutClick, theme, onToggleTheme }) {
           </div>
         </div>
         <button className="sidebar-theme-btn" onClick={onToggleTheme} title="Toggle theme">
-          <span className="sidebar-theme-icon">{theme === "dark" ? <RiSunLine /> : <RiMoonClearLine />}</span>
-          <span className="sidebar-theme-label">{theme === "dark" ? "Light Mode" : "Dark Mode"}</span>
+          <span className="sidebar-theme-icon">{nextMeta.icon}</span>
+          <span className="sidebar-theme-label">{nextMeta.label}</span>
         </button>
         <button className="sidebar-logout-btn" onClick={onLogoutClick} title="Sign out">
           <span className="sidebar-logout-icon"><RiLogoutCircleRLine /></span>
@@ -153,6 +178,81 @@ function Sidebar({ user, onLogoutClick, theme, onToggleTheme }) {
         </button>
       </div>
     </aside>
+  );
+}
+
+// ── Status Dropdown ───────────────────────────────────────────────────────────
+// Styled as a proper input field (neutral surface, label, leading status icon,
+// trailing chevron) rather than a solid color badge — opens into a card menu
+// where the active row is marked with a checkmark instead of just a highlight.
+function StatusDropdown({ value, sc, onChange }) {
+  const [open, setOpen] = useState(false);
+  const wrapRef = useRef(null);
+  const CurrentIcon = STATUS_ICONS[value] || RiCheckboxBlankCircleLine;
+
+  useEffect(() => {
+    const onOutside = (e) => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener("mousedown", onOutside);
+    return () => document.removeEventListener("mousedown", onOutside);
+  }, []);
+
+  return (
+    <div className="status-dropdown" ref={wrapRef}>
+      <button
+        type="button"
+        className="status-select"
+        style={{
+          borderColor: open ? sc.color : sc.border,
+          boxShadow: open ? `0 0 0 3px ${sc.ring}` : "none",
+        }}
+        onClick={() => setOpen(o => !o)}
+      >
+        <span key={value} className="status-select-icon" style={{ color: sc.color }}>
+          <CurrentIcon />
+        </span>
+        <span className="status-select-label">{value}</span>
+        <span className={`status-select-caret${open ? " status-select-caret--open" : ""}`}>
+          <RiArrowDownSLine />
+        </span>
+      </button>
+      {open && (
+        <ul className="status-dropdown-list">
+          {STATUS_OPTIONS.map((s, idx) => {
+            const optSc = STATUS_COLORS[s];
+            const OptIcon = STATUS_ICONS[s];
+            const active = s === value;
+            return (
+              <li
+                key={s}
+                className="status-dropdown-option"
+                style={{
+                  animationDelay: `${idx * 30}ms`,
+                  ...(active ? { background: optSc.bg } : {}),
+                }}
+                onClick={() => { onChange(s); setOpen(false); }}
+              >
+                <span className="status-dropdown-option-icon" style={{ color: optSc.color }}>
+                  <OptIcon />
+                </span>
+                <span
+                  className="status-dropdown-option-label"
+                  style={active ? { color: optSc.color, fontWeight: 700 } : undefined}
+                >
+                  {s}
+                </span>
+                {active && (
+                  <span className="status-dropdown-option-check" style={{ color: optSc.color }}>
+                    <RiCheckLine />
+                  </span>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
   );
 }
 
@@ -185,7 +285,10 @@ export default function App() {
   const [toast,     setToast]     = useState(null);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [theme, setTheme] = useState(() => {
-    try { return localStorage.getItem("pm_theme") || "dark"; } catch { return "dark"; }
+    try {
+      const stored = localStorage.getItem("pm_theme");
+      return THEME_ORDER.includes(stored) ? stored : "dark";
+    } catch { return "dark"; }
   });
 
   useEffect(() => {
@@ -193,7 +296,7 @@ export default function App() {
     try { localStorage.setItem("pm_theme", theme); } catch {}
   }, [theme]);
 
-  const toggleTheme = () => setTheme(t => (t === "dark" ? "light" : "dark"));
+  const toggleTheme = () => setTheme(t => THEME_ORDER[(THEME_ORDER.indexOf(t) + 1) % THEME_ORDER.length]);
 
   const showToast = (message, type = "success") => {
     setToast({ message, type });
@@ -331,13 +434,11 @@ export default function App() {
                 onChange={e => setNewTitle(e.target.value)}
                 onKeyDown={e => e.key === "Enter" && handleAdd()}
               />
-              <select
-                className="add-select"
+              <StatusDropdown
                 value={newStatus}
-                onChange={e => setNewStatus(e.target.value)}
-              >
-                {STATUS_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
-              </select>
+                sc={STATUS_COLORS[newStatus] || FALLBACK_STATUS_COLOR}
+                onChange={setNewStatus}
+              />
               <button
                 className={`add-btn${adding || !newTitle.trim() ? " add-btn--disabled" : ""}`}
                 onClick={handleAdd}
@@ -353,7 +454,7 @@ export default function App() {
                 {search ? "No tasks match your search." : "Nothing here yet — add a task above."}
               </div>
             ) : filtered.map((task, idx) => {
-              const sc = STATUS_COLORS[task.status] || { color: "#94a3b8", bg: "transparent", border: "#94a3b844" };
+              const sc = STATUS_COLORS[task.status] || FALLBACK_STATUS_COLOR;
               return (
                 <div key={task.id} className="task-row">
                   <div className="task-title-cell">
@@ -362,16 +463,11 @@ export default function App() {
                       {task.title}
                     </span>
                   </div>
-                  <select
+                  <StatusDropdown
                     value={task.status}
-                    onChange={e => handleStatusChange(task.id, e.target.value)}
-                    className="status-select"
-                    style={{ color: sc.color, background: sc.bg, borderColor: sc.border }}
-                  >
-                    {STATUS_OPTIONS.map(s => (
-                      <option key={s} value={s} style={{ color: "#e2e8f0", background: "#161f35" }}>{s}</option>
-                    ))}
-                  </select>
+                    sc={sc}
+                    onChange={status => handleStatusChange(task.id, status)}
+                  />
                   <button className="delete-btn" onClick={() => handleDelete(task.id)} title="Delete"><AiTwotoneDelete /></button>
                 </div>
               );
@@ -404,7 +500,6 @@ export default function App() {
 
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
-        select option { background: #161f35; color: #e2e8f0; }
       `}</style>
     </div>
   );
